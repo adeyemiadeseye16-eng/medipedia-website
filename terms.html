@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+  /* sticky bottom footer */
+  .page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+    z-index: 1000;
+  }
+  .page-footer button {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  body {
+    padding-bottom: 70px; /* space for footer */
+  }
+</style>
+  <meta charset="utf-8">
+  <title>Terms & Conditions – Medipedia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="create account.css">
+  <style>section{max-width:800px}h2{color:var(--blue);margin-top:20px}</style>
+</head>
+<body>
+  <section class="card">
+    <h1>Terms & Conditions</h1>
+    <p class="tag">Last updated: 15 September 2025</p>
+
+    <h2>1. Acceptance of Terms</h2>
+    <p>By clicking “I Agree” you confirm that you are an authorised representative of a licensed healthcare institution and that you accept these Terms on behalf of that institution.</p>
+
+    <h2>2. Use of Service</h2>
+    <p>Medipedia provides clinical-decision support information only. It does not replace the independent judgment of a clinician and does not constitute medical advice to patients.</p>
+
+    <h2>3. Data Ownership</h2>
+    <p>All patient data entered remain the sole property of your hospital. Medipedia acts as a data-processor under GDPR Article 28 and HIPAA Business Associate standards.</p>
+
+    <h2>4. Privacy</h2>
+    <p>We do not sell, share or monetise identifiable data. Please review our full Privacy Policy <a href="#">here</a>.</p>
+
+    <h2>5. Licence &amp; Restrictions</h2>
+    <p>You may access the platform via authorised accounts only. Reverse-engineering, scraping or reselling the software is strictly prohibited.</p>
+
+    <h2>6. Liability</h2>
+    <p>Medipedia LLC shall not be liable for any indirect, incidental or consequential damages arising from the use or inability to use the service.</p>
+
+    <h2>7. Termination</h2>
+    <p>Either party may terminate the agreement with 30 days written notice. Upon termination your data will be exported to you and then permanently deleted from our servers.</p>
+
+    <h2>8. Governing Law</h2>
+    <p>These Terms are governed by the laws of the State of Delaware, USA, without regard to conflict-of-law principles.</p>
+
+    <button class="btn-primary" onclick="acceptTerms()">I Agree – Create Account</button>
+    <p class="foot"><a href="welcome-medipedia.html">← Back</a></p>
+  </section>
+
+  <script>
+    function acceptTerms(){
+      // move pending name to permanent storage
+      const firstName = localStorage.getItem('pendingFirstName');
+      if(!firstName){alert("No name found"); return;}
+      localStorage.setItem('userName', firstName);
+      localStorage.removeItem('pendingFirstName');
+      // mark account created (demo)
+      localStorage.setItem('accountCreated','true');
+      location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>

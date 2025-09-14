@@ -1,0 +1,16 @@
+/* Slideshow background */
+body {
+  margin: 0;
+  height: 100vh;
+  animation: bg-slide 15s infinite;   /* 5 s per image */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@keyframes bg-slide {
+  0%   { background-image: url("../img/Nurse Assisting Elderly Man.png"); }
+  33%  { background-image: url("../img/Doctor Examining Child.png"); }
+  66%  { background-image: url("../img/Confident Healthcare Worker.png"); }
+  100% { background-image: url("../img/Nurse Assisting Elderly Man.png"); } /* loop back */
+}

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+  /* sticky bottom footer */
+  .page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+    z-index: 1000;
+  }
+  .page-footer button {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  body {
+    padding-bottom: 70px; /* space for footer */
+  }
+</style>
+  <meta charset="UTF-8">
+  <title>Medipedia – Full-World Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="dashboard.css">
+  <style>
+    /* extra dash styles */
+    .wide{max-width:1100px}
+    .search-row{display:flex;gap:12px;margin-bottom:20px}
+    .search-row input{flex:1}
+    #results{max-height:600px;overflow-y:auto;margin-top:20px}
+    .disease-card{background:#fff;border:1px solid #ddd;border-radius:var(--radius);padding:16px;margin-bottom:12px;cursor:pointer}
+    .disease-card:hover{border-color:var(--blue)}
+    .drug-tag{display:inline-block;background:var(--blue);color:#fff;padding:4px 8px;border-radius:4px;font-size:.8rem;margin:2px}
+    .hidden{display:none}
+    .logout{position:absolute;top:20px;right:20px;background:#e4e6eb;color:#222;padding:6px 14px;border:none;border-radius:var(--radius);cursor:pointer;font-size:14px}
+    
+  </style>
+  
+</head>
+<body>
+  
+  <!-- top-left fixed button -->
+<button id="editBtn" class="edit-profile-btn" onclick="location.href='edit-profile.html'">Edit Profile</button>
+<style>
+  .edit-profile-btn{position:fixed;top:15px;left:15px;background:var(--blue);color:#fff;border:none;padding:6px 12px;border-radius:var(--radius);font-size:13px;cursor:pointer;z-index:1500}
+</style>
+  <script>
+  /* ----- GUARD: redirect if no valid session ----- */
+  (function(){
+    const session = JSON.parse(localStorage.getItem('mpSession')||'{}');
+    if(!session.token){location.href='login.html';}
+  })();
+</script>
+<button class="logout" onclick="logout()">Logout</button>
+
+<section class="card wide">
+  <h1>Medipedia – World Disease &amp; Symptom Search</h1>
+  <p class="tag">Type any symptom to see ranked diseases instantly (offline)</p>
+
+  <div class="search-row">
+    <input id="symptomInput" placeholder="e.g. chest pain, polyuria, night sweat" autofocus>
+    <button onclick="searchSymptom()">Search</button>
+  </div>
+
+  <!-- optional patient vitals -->
+  <div class="row">
+    <input id="age"  type="number" min="0"  max="120" placeholder="Age">
+    <select id="gender"><option>Female</option><option>Male</option><option>Other</option></select>
+  </div>
+
+  <div id="results"></div>
+</section>
+
+<script>
+/* --------------- 30 k disease–symptom records (sample) --------------- */
+const DISEASE_DB = [
+  {disease:"Hypertensive heart disease", symptoms:["chest pain","shortness of breath","dizziness","fatigue","fall","syncope","vertigo","sweating","palpitation","nausea","angina","chest pressure"], treatment:"Control BP with lifestyle + ACE-i/ARB; add BB if angina", drugs:["Lisinopril 10 mg OD","Bisoprolol 5 mg OD"]},
+  {disease:"Type 2 Diabetes", symptoms:["polyuria","polydipsia","fatigue","blurred vision","weight loss"], treatment:"Metformin first-line; lifestyle; check HbA1c q3m", drugs:["Metformin 500 mg BD","Glimepiride 2 mg OD"]},
+  {disease:"Pneumonia", symptoms:["cough","fever","shortness of breath","productive sputum","pleuritic pain"], treatment:"Empiric amoxicillin-clavulanate; adjust per culture", drugs:["Amox-clav 625 mg TID","Paracetamol 1 g Q8h PRN"]},
+  {disease:"Major Depressive Disorder", symptoms:["low mood","anhedonia","sleep disturbance","guilt","fatigue","appetite change"], treatment:"SSRI + CBT; monitor QIDS weekly", drugs:["Sertraline 50 mg OD","Mirtazapine 15 mg nocte"]},
+  {disease:"COVID-19", symptoms:["fever","dry cough","fatigue","loss of taste","shortness of breath"], treatment:"Supportive; monitor SpO₂; steroids if hypoxic", drugs:["Paracetamol 1 g Q8h","Dexamethasone 6 mg OD"]},
+  {disease:"Urinary Tract Infection", symptoms:["dysuria","frequency","hematuria","suprapubic pain"], treatment:"Nitrofurantoin 5 days; send culture", drugs:["Nitrofurantoin 100 mg BD","Plenty of fluids"]},
+  {disease:"Sickle-cell Crisis", symptoms:["severe pain","shortness of breath","fever","joint pain"], treatment:"Hydration + opioids + oxygen; exchange if chest syndrome", drugs:["Morphine 5–10 mg IV","Hydration 2 L/day"]},
+  {disease:"Heart Failure", symptoms:["orthopnea","fatigue","dyspnea on exertion","leg edema"], treatment:"Loop diuretic + ACE-i + BB ± MRA", drugs:["Furosemide 40 mg OD","Spironolactone 25 mg OD"]},
+  {disease:"Coronary Artery Disease", symptoms:["chest pain on exertion","sweating","nausea","relief with rest"], treatment:"Aspirin + statin + BB; consider PCI", drugs:["Aspirin 75 mg OD","Atorvastatin 40 mg nocte"]},
+  {disease:"Asthma", symptoms:["wheeze","cough","night symptoms","shortness of breath"], treatment:"ICS-LABA; SABA PRN; written action plan", drugs:["Salbutamol 2 puffs Q4h PRN","Budesonide-formoterol 2 puffs BD"]}
+  
+];
+
+/* --------------- SEARCH ENGINE --------------- */
+function normalize(str){
+  return str.toLowerCase().replace(/[^a-z0-9 ]/g,"").trim();
+}
+function searchSymptom(){
+  const raw = document.getElementById("symptomInput").value;
+  if(!raw){alert("Enter a symptom");return;}
+  const term = normalize(raw);
+  const scored = DISEASE_DB.map(d=>{
+     const matchCount = d.symptoms.map(normalize).filter(s=>s.includes(term)).length;
+     return {...d, score: matchCount};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+  renderResults(scored);
+}
+function renderResults(list){
+  const box = document.getElementById("results");
+  if(!list.length){box.innerHTML="<p>No diseases found for that symptom.</p>";return;}
+  box.innerHTML = list.map((d,i)=>`
+    <div class="disease-card" onclick="toggleDetail(${i})">
+      <strong>${d.disease}</strong> – ${d.score} matching symptoms
+      <div id="det-${i}" class="hidden" style="margin-top:12px;border-top:1px solid #eee;padding-top:12px">
+        <p><b>Treatment:</b> ${d.treatment}</p>
+        <div><b>First-line drugs:</b> ${d.drugs.map(x=>`<span class="drug-tag">${x}</span>`).join("")}</div>
+      </div>
+    </div>`).join("");
+}
+function toggleDetail(i){
+  const d = document.getElementById("det-"+i);
+  d.classList.toggle("hidden");
+}
+/* --------------- LOGOUT --------------- */
+function logout(){
+  localStorage.clear();
+  location.href="login.html";
+}
+/* --------------- allow ENTER key --------------- */
+document.getElementById("symptomInput").addEventListener("keyup",e=>{if(e.key==="Enter")searchSymptom();});
+</script>
+<!-- user greeting -->
+<span id="userGreeting" style="position:absolute;top:20px;right:20px;color:#fff;background:#1877f2;padding:6px 12px;border-radius:8px;font-size:14px;display:none"></span>
+<script>
+  const name = localStorage.getItem('userName');
+  if(name){
+    const g = document.getElementById('userGreeting');
+    g.textContent = `Hello ${name}`;
+    g.style.display = 'inline-block';
+  }
+</script>
+<span id="userGreeting" style="position:absolute;top:20px;right:20px;background:#1877f2;color:#fff;padding:6px 12px;border-radius:8px;font-size:14px"></span>
+<script>
+  const session = JSON.parse(localStorage.getItem('mpSession')||'{}');
+  if(session.name){
+    document.getElementById('userGreeting').textContent = `Hello ${session.name}`;
+  }
+</script>
+<!-- bottom logout footer -->
+<div class="page-footer">
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+  function logout() {
+    localStorage.removeItem('mpSession');
+    location.href = 'login.html';
+  }
+</script>
+
+
+<!-- 3. BOTTOM-STICKY LOGOUT FOOTER -->
+<div class="page-footer">
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/src/sha256.min.js"></script>
+<script>
+/* ---------- load greeting ---------- */
+(function(){
+  const s = JSON.parse(localStorage.getItem('mpSession')||'{}');
+  if(s.token){renderName(s.personal.name);}
+})();
+/* ---------- logout ---------- */
+function logout(){
+  localStorage.removeItem('mpSession');
+  location.href = 'login.html';
+}
+</script>
+<style>
+  .page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+    z-index: 1000;
+  }
+  body {
+    padding-bottom: 70px;
+  }
+</style>
+
+</style>
+<!-- blue, bottom-left, fixed button -->
+<button id="credBtn" class="cred-bottom" onclick="goUpdate()">Update Credentials</button>
+
+<style>
+  .cred-bottom{
+    position: fixed;
+    bottom: 15px;
+    left: 15px;
+    background: #1877f2;   /* Medipedia blue */
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    z-index: 1500;
+  }
+</style>
+
+<script>
+  function goUpdate(){
+    location.href = 'update-credentials.html';   // redirect
+  }
+</script>
+</style>
+</body>
+</html>

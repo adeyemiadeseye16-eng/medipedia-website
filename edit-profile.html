@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+  /* force blue buttons inside edit-profile page */
+  .btn-primary, button[type="button"] {
+    background: var(--blue) !important;
+    color: #fff !important;
+    border: none !important;
+  }
+</style>
+  <meta charset="utf-8">
+  <title>Edit Profile – Medipedia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="create account.css">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/src/sha256.min.js"></script>
+</head>
+<body>
+  <section class="card wide" style="margin-top:60px">
+    <h1>Edit Profile</h1>
+
+    <!-- Change Name -->
+    <h3>Name</h3>
+    <input id="nameInput" type="text" placeholder="Full Name">
+    <button class="btn-primary" style="width:100%;margin-top:8px" onclick="updateName()">Update Name</button>
+
+    <!-- Change Password -->
+    <h3 style="margin-top:20px">Password</h3>
+    <input type="password" id="oldPwd"  placeholder="Current Password">
+    <input type="password" id="newPwd"  placeholder="New Password (≥6)">
+    <input type="password" id="newPwd2" placeholder="Confirm New Password">
+    <button class="btn-primary" style="width:100%;margin-top:8px" onclick="updatePassword()">Update Password</button>
+
+    <p class="foot"><a href="dashboard.html">← Back to Dashboard</a></p>
+  </section>
+  
+  <script>
+  // ---- pre-fill current name ----
+  (function(){
+    const s = JSON.parse(localStorage.getItem('mpSession')||'{}');
+    if(s.personal?.name) document.getElementById('nameInput').value = s.personal.name;
+  })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/src/sha256.min.js"></script>
+<script>
+  /* ---- pre-fill name ---- */
+  (function(){
+    const s = JSON.parse(localStorage.getItem('mpSession')||'{}');
+    if(s.personal?.name) document.getElementById('nameInput').value = s.personal.name;
+  })();
+
+  /* ---- update name ---- */
+  function updateName(){
+    const newName = document.getElementById('nameInput').value.trim();
+    if(!newName){alert('Name cannot be empty');return;}
+
+    const session = JSON.parse(localStorage.getItem('mpSession')||'{}');
+    const users   = JSON.parse(localStorage.getItem('mpUsers')||'[]');
+
+    session.personal.name = newName;
+    localStorage.setItem('mpSession', JSON.stringify(session));
+    const user = users.find(u=>u.personal.email === session.personal.email);
+    if(user) user.personal.name = newName;
+    localStorage.setItem('mpUsers', JSON.stringify(users));
+
+    window.location.href = 'dashboard.html';   // instant redirect
+  }
+
+  /* ---- update password ---- */
+  function updatePassword(){
+    const oldPwd  = document.getElementById('oldPwd').value;
+    const newPwd  = document.getElementById('newPwd').value;
+    const newPwd2 = document.getElementById('newPwd2').value;
+
+    if(!oldPwd || !newPwd || newPwd.length<6){alert('Enter valid new password (≥6)');return;}
+    if(newPwd !== newPwd2){alert('New passwords do not match');return;}
+
+    const session = JSON.parse(localStorage.getItem('mpSession')||'{}');
+    const users   = JSON.parse(localStorage.getItem('mpUsers')||'[]');
+    const user    = users.find(u=>u.personal.email === session.personal.email);
+
+    if(user.personal.passwordHash !== sha256(oldPwd)){alert('Current password is incorrect');return;}
+
+    user.personal.passwordHash = sha256(newPwd);
+    localStorage.setItem('mpUsers', JSON.stringify(users));
+
+    window.location.href = 'dashboard.html';   // instant redirect
+  }
+</script>
+</body>
+</html>

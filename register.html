@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Register – Medipedia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="create account.css">
+  <!-- SHA-256 helper -->
+  <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/src/sha256.min.js"></script>
+</head>
+<body>
+  <section class="card">
+    <h1>Medipedia</h1>
+    <p class="tag">Create Secure Account</p>
+
+    <form id="regForm">
+      <input type="text"    id="name"     placeholder="Full Name" required>
+      <input type="email"   id="email"    placeholder="Email" required>
+      <input type="password"id="pwd"      placeholder="Password" required minlength="6">
+      <input type="password"id="pwd2"     placeholder="Confirm Password" required minlength="6">
+      <button type="submit">Create Account</button>
+    </form>
+
+    <p class="foot">Already registered? <a href="login.html">Sign In</a></p>
+  </section>
+
+  <script>
+    document.getElementById('regForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const name  = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const pwd   = document.getElementById('pwd').value;
+      const pwd2  = document.getElementById('pwd2').value;
+
+      if(pwd !== pwd2){alert("Passwords do not match");return;}
+
+      // ---- store user ----
+      const users = JSON.parse(localStorage.getItem('mpUsers') || '[]');
+      if(users.find(u=>u.email===email)){alert("Email already registered");return;}
+
+      users.push({
+        name,
+        email,
+        passwordHash: sha256(pwd)   // one-way hash
+      });
+      localStorage.setItem('mpUsers', JSON.stringify(users));
+
+      alert("Account created! Redirecting to login …");
+      location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>
